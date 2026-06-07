@@ -183,6 +183,9 @@
                 <button onclick="drawerNav('calendar')" id="nav-calendar" class="drawer-nav-item w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700">
                     <i data-lucide="calendar-days" class="w-5 h-5"></i> Calendar
                 </button>
+                <button onclick="drawerNav('jarvis')" id="nav-jarvis" class="drawer-nav-item w-full flex items-center gap-3 px-5 py-3 text-sm text-gray-700">
+                    <i data-lucide="bot" class="w-5 h-5"></i> Jarvis
+                </button>
             </nav>
             <div class="p-5 border-t border-gray-100">
                 <p class="text-[10px] text-gray-300 uppercase tracking-widest font-bold">PantherOnlyEats v1.0</p>
@@ -224,6 +227,57 @@
                     <h3 id="cal-day-label" class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3"></h3>
                     <div id="cal-events" class="space-y-3"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ===================== JARVIS PAGE ===================== -->
+        <div id="jarvis-page" class="hidden absolute inset-0 z-20 bg-white flex flex-col">
+            <header class="sticky top-0 bg-white/90 backdrop-blur-lg border-b border-gray-100 px-4 pt-4 pb-3 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <button onclick="toggleDrawer()" class="p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 transition">
+                        <i data-lucide="menu" class="w-5 h-5 text-gray-700"></i>
+                    </button>
+                    <h2 class="font-bold text-sm text-gray-800 uppercase tracking-wide">Jarvis</h2>
+                    <div class="w-8"></div>
+                </div>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <section class="rounded-3xl bg-gradient-to-br from-gsu-blue to-gsu-light text-white p-5 shadow-lg">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center">
+                            <i data-lucide="bot" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-lg leading-tight">Jarvis Contact Agent</h3>
+                            <p class="text-xs text-white/70">Find public contact details and draft outreach.</p>
+                        </div>
+                    </div>
+                    <p class="text-xs leading-relaxed text-white/80">Enter a website, a person name, or both. Jarvis scans public pages like contact, about, team, and directory pages, then drafts a message based on why you are reaching out.</p>
+                </section>
+
+                <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                    <div>
+                        <label for="jarvis-name" class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Person name</label>
+                        <input id="jarvis-name" type="text" placeholder="Jane Doe" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-gsu-blue focus:ring-2 focus:ring-gsu-pale">
+                    </div>
+                    <div>
+                        <label for="jarvis-website" class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Website</label>
+                        <input id="jarvis-website" type="text" placeholder="example.com" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-gsu-blue focus:ring-2 focus:ring-gsu-pale">
+                        <p class="mt-1.5 text-[10px] text-gray-400">Name-only searches try to resolve an official public website first.</p>
+                    </div>
+                    <div>
+                        <label for="jarvis-reason" class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Reason for contact</label>
+                        <textarea id="jarvis-reason" rows="4" placeholder="Invite them to speak at our student event" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-gsu-blue focus:ring-2 focus:ring-gsu-pale resize-none"></textarea>
+                    </div>
+                    <button onclick="runJarvis()" id="jarvis-submit" class="w-full py-3 bg-gsu-blue text-white text-sm font-bold rounded-2xl hover:bg-gsu-dark transition flex items-center justify-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        Run Jarvis
+                    </button>
+                    <p class="text-[10px] leading-relaxed text-gray-400">Use contact information respectfully and follow applicable site terms, privacy laws, and anti-spam rules.</p>
+                </section>
+
+                <section id="jarvis-status" class="hidden rounded-2xl border border-gsu-pale bg-gsu-pale/60 p-4 text-xs font-semibold text-gsu-blue"></section>
+                <section id="jarvis-results" class="hidden space-y-4"></section>
             </div>
         </div>
 
@@ -286,7 +340,7 @@
     // =====================================================================
     const RSVP_BASE = 'https://pin.gsu.edu/event/';
     let currentView = 'grid';
-    let currentPage = 'events'; // 'events' | 'calendar'
+    let currentPage = 'events'; // 'events' | 'calendar' | 'jarvis'
 
     // Filter state
     let filters = { dates: new Set(), rooms: new Set(), times: new Set() };
@@ -392,12 +446,9 @@
         document.querySelectorAll('.drawer-nav-item').forEach(el => el.classList.remove('active'));
         document.getElementById('nav-' + page).classList.add('active');
 
-        if (page === 'calendar') {
-            document.getElementById('calendar-page').classList.remove('hidden');
-            initCalendar();
-        } else {
-            document.getElementById('calendar-page').classList.add('hidden');
-        }
+        document.getElementById('calendar-page').classList.toggle('hidden', page !== 'calendar');
+        document.getElementById('jarvis-page').classList.toggle('hidden', page !== 'jarvis');
+        if (page === 'calendar') initCalendar();
         lucide.createIcons();
     }
 
@@ -722,6 +773,143 @@
         document.getElementById('view-tab').classList.toggle('hidden', viewId !== 'tab');
         document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
         document.getElementById('tab-' + viewId).classList.add('active');
+    }
+
+    // =====================================================================
+    //  JARVIS
+    // =====================================================================
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function setJarvisStatus(message, isError = false) {
+        const status = document.getElementById('jarvis-status');
+        status.classList.toggle('hidden', !message);
+        status.classList.toggle('border-red-100', isError);
+        status.classList.toggle('bg-red-50', isError);
+        status.classList.toggle('text-gsu-red', isError);
+        status.classList.toggle('border-gsu-pale', !isError);
+        status.classList.toggle('bg-gsu-pale/60', !isError);
+        status.classList.toggle('text-gsu-blue', !isError);
+        status.textContent = message || '';
+    }
+
+    function renderJarvisItems(items, emptyText, formatter) {
+        if (!items || items.length === 0) {
+            return `<p class="text-xs text-gray-400">${emptyText}</p>`;
+        }
+        return `<div class="space-y-2">${items.map(formatter).join('')}</div>`;
+    }
+
+    function contactPill(icon, content) {
+        return `<div class="flex items-start gap-2 rounded-2xl bg-gray-50 border border-gray-100 px-3 py-2 text-xs text-gray-700">
+            <i data-lucide="${icon}" class="w-4 h-4 text-gsu-blue mt-0.5 shrink-0"></i>
+            <span class="break-all">${content}</span>
+        </div>`;
+    }
+
+    function renderJarvisResults(result) {
+        const contacts = result.contacts || {};
+        const draft = result.draft || {};
+        const sources = result.sources || [];
+        const results = document.getElementById('jarvis-results');
+        const website = result.website || '';
+
+        results.innerHTML = `
+            <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-black text-sm text-gray-900 uppercase tracking-wide">Contact Info</h3>
+                        ${website ? `<p class="text-[10px] text-gray-400 break-all">${escapeHtml(website)}</p>` : ''}
+                    </div>
+                    ${contacts.primaryEmail ? `<span class="text-[9px] font-bold bg-gsu-red text-white px-2 py-1 rounded-full uppercase">Best Match</span>` : ''}
+                </div>
+                ${contacts.primaryEmail ? contactPill('mail-check', `<a href="mailto:${escapeHtml(contacts.primaryEmail)}" class="font-bold text-gsu-blue">${escapeHtml(contacts.primaryEmail)}</a>`) : ''}
+                <div>
+                    <h4 class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Emails</h4>
+                    ${renderJarvisItems(contacts.emails, 'No public emails found.', email => contactPill('mail', `<a href="mailto:${escapeHtml(email)}" class="text-gsu-blue font-semibold">${escapeHtml(email)}</a>`))}
+                </div>
+                <div>
+                    <h4 class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Phones</h4>
+                    ${renderJarvisItems(contacts.phones, 'No public phone numbers found.', phone => contactPill('phone', escapeHtml(phone)))}
+                </div>
+                <div>
+                    <h4 class="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Social / Contact Links</h4>
+                    ${renderJarvisItems([...(contacts.socialLinks || []), ...(contacts.contactPages || [])], 'No social or contact links found.', link => contactPill('link', `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="text-gsu-blue font-semibold">${escapeHtml(link)}</a>`))}
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-black text-sm text-gray-900 uppercase tracking-wide">Draft Email</h3>
+                    <button onclick="copyTextFromElement('jarvis-email-draft')" class="text-[10px] font-bold text-gsu-blue">Copy</button>
+                </div>
+                <pre id="jarvis-email-draft" class="whitespace-pre-wrap rounded-2xl bg-gray-50 border border-gray-100 p-3 text-xs leading-relaxed text-gray-700">${escapeHtml(draft.email || '')}</pre>
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-black text-sm text-gray-900 uppercase tracking-wide">Short Message</h3>
+                    <button onclick="copyTextFromElement('jarvis-message-draft')" class="text-[10px] font-bold text-gsu-blue">Copy</button>
+                </div>
+                <pre id="jarvis-message-draft" class="whitespace-pre-wrap rounded-2xl bg-gray-50 border border-gray-100 p-3 text-xs leading-relaxed text-gray-700">${escapeHtml(draft.message || '')}</pre>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+                <h3 class="font-black text-sm text-gray-900 uppercase tracking-wide mb-3">Sources</h3>
+                ${renderJarvisItems(sources, 'No source pages were successfully read.', source => contactPill('file-search', `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener" class="text-gsu-blue font-semibold">${escapeHtml(source.title || source.url)}</a>`))}
+            </section>
+        `;
+        results.classList.remove('hidden');
+        lucide.createIcons();
+    }
+
+    async function copyTextFromElement(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        await navigator.clipboard.writeText(el.textContent);
+        setJarvisStatus('Copied to clipboard.');
+        setTimeout(() => setJarvisStatus(''), 1500);
+    }
+
+    async function runJarvis() {
+        const name = document.getElementById('jarvis-name').value.trim();
+        const website = document.getElementById('jarvis-website').value.trim();
+        const reason = document.getElementById('jarvis-reason').value.trim();
+        const submit = document.getElementById('jarvis-submit');
+        const results = document.getElementById('jarvis-results');
+
+        if (!name && !website) {
+            setJarvisStatus('Add a person name, a website, or both.', true);
+            return;
+        }
+
+        submit.disabled = true;
+        submit.classList.add('opacity-60', 'cursor-not-allowed');
+        results.classList.add('hidden');
+        setJarvisStatus('Jarvis is scanning public pages and drafting outreach...');
+
+        try {
+            const response = await fetch('/api/jarvis', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ name, website, reason })
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Jarvis could not complete the search.');
+            }
+            setJarvisStatus('');
+            renderJarvisResults(payload);
+        } catch (error) {
+            setJarvisStatus(`${error.message} Run "npm start" and open http://localhost:3000 so Jarvis can use the server-side scraper.`, true);
+        } finally {
+            submit.disabled = false;
+            submit.classList.remove('opacity-60', 'cursor-not-allowed');
+            lucide.createIcons();
+        }
     }
 
     // =====================================================================
